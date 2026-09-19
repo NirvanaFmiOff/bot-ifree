@@ -33,27 +33,33 @@ def handle_message(message):
         msg = bot.reply_to(message, f"🔍 Consultando el IMEI: {imei}...")
         
         try:
-            url = "https://ifreeicloud.co.uk/api"
-            params = {"key": IFREE_API_KEY, "imei": imei}
-            response = requests.get(url, params=params, timeout=20)
+            url = f"https://ifreeicloud.co.uk/api?key={IFREE_API_KEY}&imei={imei}"
+            response = requests.get(url, timeout=20)
+            
+            # Intentamos convertir la respuesta directamente a JSON
             data = response.json()
             
-            if data.get("status") == 250 or data.get("success") == True:
-                result = data.get("object", data)
+            # Verificamos si el JSON contiene los datos del equipo
+            if data and isinstance(data, dict):
+                # Extraemos los campos adaptados al formato JSON de la API
+                modelo = data.get('model', data.get('imei_model', 'N/A'))
+                marca = data.get('brand', 'Apple')
+                fmi = data.get('fmi', data.get('find_my_iphone', data.get('icloud', 'N/A')))
+                
                 respuesta = (
                     f"✅ **Resultado de la consulta**\n\n"
-                    f"📱 **Modelo:** {result.get('model', 'N/A')}\n"
-                    f"🏷️ **Marca:** {result.get('brand', 'Apple')}\n"
-                    f"🔒 **FMI / iCloud:** {result.get('fmi', result.get('find_my_iphone', 'N/A'))}\n"
+                    f"📱 **Modelo:** {modelo}\n"
+                    f"🏷️ **Marca:** {marca}\n"
+                    f"🔒 **FMI / iCloud:** {fmi}\n"
                     f"📋 **IMEI:** {imei}"
                 )
             else:
-                respuesta = f"❌ Error: {data.get('error', 'Respuesta no válida')}"
+                respuesta = "❌ La API respondió pero el formato JSON no es válido."
             
             bot.edit_message_text(respuesta, chat_id=message.chat.id, message_id=msg.message_id, parse_mode="Markdown")
             
         except Exception as e:
-            bot.edit_message_text(f"❌ Error de conexión con la API.", chat_id=message.chat.id, message_id=msg.message_id)
+            bot.edit_message_text(f"❌ Error al procesar el JSON de la API: {str(e)}", chat_id=message.chat.id, message_id=msg.message_id)
     else:
         bot.reply_to(message, "❌ Envía un IMEI válido de 15 dígitos.")
 
