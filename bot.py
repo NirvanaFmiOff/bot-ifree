@@ -23,7 +23,7 @@ def keep_alive():
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    bot.reply_to(message, "¡Hola! Envíame tu código IMEI de 15 dígitos.")
+    bot.reply_to(message, "¡Hola! Envíame tu código IMEI de 15 dígitos para consultarlo en iFree.")
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
@@ -33,18 +33,23 @@ def handle_message(message):
         msg = bot.reply_to(message, f"🔍 Consultando el IMEI: {imei}...")
         
         try:
-            url = f"https://ifreeicloud.co.uk/api?key={IFREE_API_KEY}&imei={imei}"
-            response = requests.get(url, timeout=20)
+            # Endpoint y parámetros exactos basados en la documentación oficial de iFree
+            url = "https://api.ifreeicloud.co.uk/"
+            payload = {
+                "service": 0,
+                "imei": imei,
+                "key": IFREE_API_KEY
+            }
             
-            # Intentamos convertir la respuesta directamente a JSON
+            response = requests.post(url, data=payload, timeout=20)
             data = response.json()
             
-            # Verificamos si el JSON contiene los datos del equipo
-            if data and isinstance(data, dict):
-                # Extraemos los campos adaptados al formato JSON de la API
-                modelo = data.get('model', data.get('imei_model', 'N/A'))
-                marca = data.get('brand', 'Apple')
-                fmi = data.get('fmi', data.get('find_my_iphone', data.get('icloud', 'N/A')))
+            # Validamos según la estructura oficial (success == true)
+            if data.get("success") == True:
+                result = data.get("object", {})
+                modelo = result.get('model', 'N/A')
+                marca = result.get('brand', 'Apple')
+                fmi = result.get('fmi', result.get('find_my_iphone', 'N/A'))
                 
                 respuesta = (
                     f"✅ **Resultado de la consulta**\n\n"
@@ -54,14 +59,15 @@ def handle_message(message):
                     f"📋 **IMEI:** {imei}"
                 )
             else:
-                respuesta = "❌ La API respondió pero el formato JSON no es válido."
+                error_msg = data.get("error", "Error desconocido en la API")
+                respuesta = f"❌ Error en la consulta: {error_msg}"
             
             bot.edit_message_text(respuesta, chat_id=message.chat.id, message_id=msg.message_id, parse_mode="Markdown")
             
         except Exception as e:
-            bot.edit_message_text(f"❌ Error al procesar el JSON de la API: {str(e)}", chat_id=message.chat.id, message_id=msg.message_id)
+            bot.edit_message_text(f"❌ Error de conexión con la API.", chat_id=message.chat.id, message_id=msg.message_id)
     else:
-        bot.reply_to(message, "❌ Envía un IMEI válido de 15 dígitos.")
+        bot.reply_to(message, "❌ Por favor, envíame un IMEI válido de exactamente 15 dígitos.")
 
 if __name__ == '__main__':
     keep_alive()
