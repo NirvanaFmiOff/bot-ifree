@@ -27,7 +27,7 @@ def keep_alive():
     t.start()
 
 def obtener_url_imagen(modelo_api):
-    """Mapeo completo de todos los modelos de iFree con las imágenes exactas de tu GitHub"""
+    """Mapeo sincronizado exactamente con los nombres del HTML de GitHub"""
     if not modelo_api:
         return None
         
@@ -65,13 +65,13 @@ def obtener_url_imagen(modelo_api):
     elif "14" in m:
         return GITHUB_BASE_URL + "iphone-14.png"
     elif "13 pro max" in m:
-        return GITHUB_BASE_URL + "iphone13-pro-max.png"
+        return GITHUB_BASE_URL + "iphone-13-pro-max.png"
     elif "13 pro" in m:
-        return GITHUB_BASE_URL + "iphone13-pro.png"
+        return GITHUB_BASE_URL + "iphone-13-pro.png"
     elif "13 mini" in m:
-        return GITHUB_BASE_URL + "iphone13-mini.png"
+        return GITHUB_BASE_URL + "iphone-13-mini.png"
     elif "13" in m:
-        return GITHUB_BASE_URL + "iphone13.png"
+        return GITHUB_BASE_URL + "iphone-13.png"
     elif "12 mini" in m:
         return GITHUB_BASE_URL + "iphone-12-mini.png"
     elif "12 pro max" in m:
@@ -128,10 +128,7 @@ def handle_message(message):
                 "key": IFREE_API_KEY
             }
             
-            # Timeout ampliado a 40 segundos
             response = requests.post(url, data=payload, timeout=40)
-            
-            # Borramos el mensaje de "Consultando..."
             bot.delete_message(chat_id=message.chat.id, message_id=msg.message_id)
             
             try:
@@ -141,7 +138,6 @@ def handle_message(message):
                 bot.send_message(message.chat.id, "❌ Error: La API devolvió una respuesta con formato inválido.")
                 return
 
-            # Imprimir en la consola de Render para depurar respuestas
             print(f"Respuesta de API para IMEI {imei}: {data}")
 
             success_val = data.get("success")
@@ -153,11 +149,9 @@ def handle_message(message):
                 marca = result.get('brand', 'Apple')
                 fmi = result.get('fmi', result.get('find_my_iphone', 'N/A'))
                 
-                # 1. ENVIAR BANNER PRINCIPAL
                 texto_banner = "🌟 **NIRVANA CHECK PREMIUM** 🌟\n*Resultado oficial de tu consulta*"
                 bot.send_photo(message.chat.id, BANNER_URL, caption=texto_banner, parse_mode="Markdown")
                 
-                # Buscamos la foto específica del modelo
                 foto_modelo = obtener_url_imagen(modelo)
                 
                 detalle_respuesta = (
