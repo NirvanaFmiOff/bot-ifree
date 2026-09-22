@@ -65,21 +65,21 @@ def obtener_url_imagen(modelo_api):
     elif "14" in m:
         return GITHUB_BASE_URL + "iphone-14.png"
     elif "13 pro max" in m:
-        return GITHUB_BASE_URL + "iphone-13-pro-max.png"
+        return GITHUB_BASE_URL + "iphone13-pro-max.png"
     elif "13 pro" in m:
-        return GITHUB_BASE_URL + "iphone-13-pro.png"
+        return GITHUB_BASE_URL + "iphone13-pro.png"
     elif "13 mini" in m:
         return GITHUB_BASE_URL + "iphone13-mini.png"
     elif "13" in m:
         return GITHUB_BASE_URL + "iphone13.png"
     elif "12 mini" in m:
-        return GITHUB_BASE_URL + "iphone12-mini.png"
+        return GITHUB_BASE_URL + "iphone-12-mini.png"
     elif "12 pro max" in m:
-        return GITHUB_BASE_URL + "iphone12-pro-max.png"
+        return GITHUB_BASE_URL + "iphone-12-pro-max.png"
     elif "12 pro" in m:
-        return GITHUB_BASE_URL + "iphone12-pro.png"
+        return GITHUB_BASE_URL + "iphone-12-pro.png"
     elif "12" in m:
-        return GITHUB_BASE_URL + "iphone12.png"
+        return GITHUB_BASE_URL + "iphone-12.png"
     elif "11 pro max" in m:
         return GITHUB_BASE_URL + "iphone-11pro-max.png"
     elif "11 pro" in m:
@@ -128,24 +128,36 @@ def handle_message(message):
                 "key": IFREE_API_KEY
             }
             
-            # Timeout ampliado a 40 segundos para evitar cortes con consultas pesadas
+            # Timeout ampliado a 40 segundos
             response = requests.post(url, data=payload, timeout=40)
-            data = response.json()
             
             # Borramos el mensaje de "Consultando..."
             bot.delete_message(chat_id=message.chat.id, message_id=msg.message_id)
             
-            if data.get("success") == True:
+            try:
+                data = response.json()
+            except Exception as json_err:
+                print(f"Error al parsear JSON: {json_err} - Respuesta cruda: {response.text}")
+                bot.send_message(message.chat.id, "❌ Error: La API devolvió una respuesta con formato inválido.")
+                return
+
+            # Imprimir en la consola de Render para depurar respuestas
+            print(f"Respuesta de API para IMEI {imei}: {data}")
+
+            success_val = data.get("success")
+            is_success = success_val is True or str(success_val).lower() == "true"
+
+            if is_success:
                 result = data.get("object", {})
                 modelo = result.get('model', 'N/A')
                 marca = result.get('brand', 'Apple')
                 fmi = result.get('fmi', result.get('find_my_iphone', 'N/A'))
                 
-                # 1. ENVIAR TU BANNER PRINCIPAL CON EL TÍTULO EXACTO
+                # 1. ENVIAR BANNER PRINCIPAL
                 texto_banner = "🌟 **NIRVANA CHECK PREMIUM** 🌟\n*Resultado oficial de tu consulta*"
                 bot.send_photo(message.chat.id, BANNER_URL, caption=texto_banner, parse_mode="Markdown")
                 
-                # Buscamos la foto específica del iPhone correspondiente
+                # Buscamos la foto específica del modelo
                 foto_modelo = obtener_url_imagen(modelo)
                 
                 detalle_respuesta = (
@@ -157,18 +169,20 @@ def handle_message(message):
                 )
                 
                 if foto_modelo:
-                    # 2. ENVIAR LA FOTO DEL MODELO CON SUS DATOS
                     bot.send_photo(message.chat.id, foto_modelo, caption=detalle_respuesta, parse_mode="Markdown")
                 else:
                     bot.send_message(message.chat.id, detalle_respuesta, parse_mode="Markdown")
                 
             else:
-                error_msg = data.get("error", "Error desconocido en la API")
+                error_msg = data.get("error", data.get("message", "Error desconocido en la API"))
                 bot.send_photo(message.chat.id, BANNER_URL, caption="🌟 **NIRVANA CHECK PREMIUM**", parse_mode="Markdown")
                 bot.send_message(message.chat.id, f"❌ Error en la consulta: {error_msg}")
-            
+        
+        except requests.exceptions.Timeout:
+            bot.send_message(message.chat.id, "❌ Error de conexión: La API tardó demasiado en responder (tiempo de espera agotado).")
         except Exception as e:
-            bot.send_message(message.chat.id, "❌ Error de conexión con la API (tiempo de espera agotado).")
+            print(f"Excepción general: {e}")
+            bot.send_message(message.chat.id, f"❌ Ocurrió un error inesperado al procesar la solicitud.")
     else:
         bot.reply_to(message, "❌ Por favor, envíame un IMEI válido de exactamente 15 dígitos.")
 
