@@ -12,7 +12,7 @@ app = Flask('')
 
 # Tu URL base de GitHub Pages
 GITHUB_BASE_URL = "https://nirvanafmioff.github.io/Catalogonirvana/"
-# Tu banner principal nombrado tal cual me dijiste
+# Tu banner principal
 BANNER_URL = GITHUB_BASE_URL + "tu-banner.jpg"
 
 @app.route('/')
@@ -27,30 +27,43 @@ def keep_alive():
     t.start()
 
 def obtener_url_imagen(modelo_api):
-    """Mapea el modelo que devuelve iFree con el nombre exacto de la imagen en tu GitHub"""
+    """Mapea el modelo de iFree con el nombre exacto de la imagen .png en tu GitHub"""
     if not modelo_api:
         return None
         
     m = modelo_api.lower()
     
-    if "11 pro max" in m:
+    # Mapeo amplio para atrapar las variantes que devuelve la API de iFree
+    if "16 pro max" in m:
+        return GITHUB_BASE_URL + "iphone-16-pro-max.png"
+    elif "16 pro" in m:
+        return GITHUB_BASE_URL + "iphone-16-pro.png"
+    elif "16 plus" in m:
+        return GITHUB_BASE_URL + "iphone-16-plus.png"
+    elif "16" in m:
+        return GITHUB_BASE_URL + "iphone-16.png"
+    elif "15 pro max" in m:
+        return GITHUB_BASE_URL + "iphone-15-pro-max.png"
+    elif "15 pro" in m:
+        return GITHUB_BASE_URL + "iphone-15-pro.png"
+    elif "15 plus" in m:
+        return GITHUB_BASE_URL + "iphone-15-plus.png"
+    elif "15" in m:
+        return GITHUB_BASE_URL + "iphone-15.png"
+    elif "14 pro max" in m:
+        return GITHUB_BASE_URL + "iphone-14-pro-max.png"
+    elif "14 pro" in m:
+        return GITHUB_BASE_URL + "iphone-14-pro.png"
+    elif "14 plus" in m:
+        return GITHUB_BASE_URL + "iphone-14-plus.png"
+    elif "14" in m:
+        return GITHUB_BASE_URL + "iphone-14.png"
+    elif "11 pro max" in m:
         return GITHUB_BASE_URL + "iphone-11pro-max.png"
     elif "11 pro" in m:
         return GITHUB_BASE_URL + "iphone-11pro.png"
     elif "11" in m:
         return GITHUB_BASE_URL + "iphone-11.png"
-    elif "14 plus" in m:
-        return GITHUB_BASE_URL + "iphone-14-plus.png"
-    elif "14 pro max" in m:
-        return GITHUB_BASE_URL + "iphone-14-pro-max.png"
-    elif "14 pro" in m:
-        return GITHUB_BASE_URL + "iphone-14-pro.png"
-    elif "14" in m:
-        return GITHUB_BASE_URL + "iphone-14.png"
-    elif "15 plus" in m:
-        return GITHUB_BASE_URL + "iphone-15-plus.png"
-    elif "15 pro max" in m:
-        return GITHUB_BASE_URL + "iphone-15-pro-max.png"
     else:
         return None
 
@@ -85,11 +98,11 @@ def handle_message(message):
                 marca = result.get('brand', 'Apple')
                 fmi = result.get('fmi', result.get('find_my_iphone', 'N/A'))
                 
-                # 1. ENVIAR PRIMERO EL BANNER PRINCIPAL
-                texto_banner = "🌟 **NIRVANA FMI PREMIUM** 🌟\n*Resultado oficial de tu consulta*"
+                # 1. BANNER PRINCIPAL CON EL TEXTO EXACTO QUE PEDISTE
+                texto_banner = "🌟 **NIRVANA CHECK PREMIUM** 🌟\n*Resultado oficial de tu consulta*"
                 bot.send_photo(message.chat.id, BANNER_URL, caption=texto_banner, parse_mode="Markdown")
                 
-                # Buscamos la foto específica del iPhone
+                # Buscamos la foto específica del iPhone en .png
                 foto_modelo = obtener_url_imagen(modelo)
                 
                 detalle_respuesta = (
@@ -101,16 +114,15 @@ def handle_message(message):
                 )
                 
                 if foto_modelo:
-                    # 2. ENVIAR LA FOTO DEL IPHONE (más chica/específica) con sus datos
+                    # 2. ENVIAR LA FOTO CHICA DEL IPHONE CON SUS DATOS
                     bot.send_photo(message.chat.id, foto_modelo, caption=detalle_respuesta, parse_mode="Markdown")
                 else:
-                    # Si la API devolvió un modelo que no está en la lista, mandamos solo el texto con los datos
+                    # Si no encuentra coincidencia de imagen, manda solo los datos formateados
                     bot.send_message(message.chat.id, detalle_respuesta, parse_mode="Markdown")
                 
             else:
                 error_msg = data.get("error", "Error desconocido en la API")
-                # Si hay error, mandamos el banner y el aviso del error
-                bot.send_photo(message.chat.id, BANNER_URL, caption="🌟 **NIRVANA FMI PREMIUM**", parse_mode="Markdown")
+                bot.send_photo(message.chat.id, BANNER_URL, caption="🌟 **NIRVANA CHECK PREMIUM**", parse_mode="Markdown")
                 bot.send_message(message.chat.id, f"❌ Error en la consulta: {error_msg}")
             
         except Exception as e:
