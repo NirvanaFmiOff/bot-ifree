@@ -8,11 +8,13 @@ TOKEN = os.getenv('BOT_TOKEN')
 IFREE_API_KEY = "SYE-VKS-E4U-9CR-TZB-X68-7YH-ID4"
 bot = telebot.TeleBot(TOKEN)
 
+# ⚠️ TU CANAL OFICIAL CONFIGURADO
+CANAL_ID = "@NirvanaInfinitoOficial" 
+
 app = Flask('')
 
 # Tu URL base de GitHub Pages
 GITHUB_BASE_URL = "https://nirvanafmioff.github.io/Catalogonirvana/"
-# Tu banner principal exacto
 BANNER_URL = GITHUB_BASE_URL + "tu-banner.jpg"
 
 @app.route('/')
@@ -26,6 +28,16 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
+def verificar_membresia(user_id):
+    """Verifica si el usuario forma parte del canal oficial"""
+    try:
+        chat_member = bot.get_chat_member(CANAL_ID, user_id)
+        estados_validos = ['creator', 'administrator', 'member']
+        return chat_member.status in estados_validos
+    except Exception as e:
+        print(f"Error al verificar membresía: {e}")
+        return False
+
 def obtener_url_imagen(modelo_api):
     """Mapeo sincronizado exactamente con los nombres del HTML de GitHub"""
     if not modelo_api:
@@ -33,7 +45,6 @@ def obtener_url_imagen(modelo_api):
         
     m = modelo_api.lower()
     
-    # Modelos más nuevos y específicos primero para evitar cruces
     if "17 pro max" in m:
         return GITHUB_BASE_URL + "iphone-17-pro-max.png"
     elif "17 pro" in m:
@@ -111,14 +122,38 @@ def obtener_url_imagen(modelo_api):
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    bot.reply_to(message, "¡Hola! Envíame tu código IMEI de 15 dígitos para consultarlo en iFree.")
+    user_id = message.from_user.id
+    
+    if not verificar_membresia(user_id):
+        bot.reply_to(
+            message, 
+            "🛡️ **SISTEMA PROTEGIDO — NIRVANA INFINITO** ♾️\n\n"
+            "_Acceso denegado._ Propiedad exclusiva de Nirvana Infinito. No tienes acceso.\n\n"
+            "Únete al canal oficial y da un like para poder usar el bot.",
+            parse_mode="Markdown"
+        )
+        return
+
+    bot.reply_to(message, "♾️ **NIRVANA CHECK SYSTEM** ♾️\n\nEnvíame el código IMEI de 15 dígitos del dispositivo para procesar la verificación oficial.")
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
+    user_id = message.from_user.id
+    
+    if not verificar_membresia(user_id):
+        bot.reply_to(
+            message, 
+            "🛡️ **SISTEMA PROTEGIDO — NIRVANA INFINITO** ♾️\n\n"
+            "_Acceso restringido._ No posees autorización para operar este sistema.\n\n"
+            "Únete al canal oficial y da un like para poder usar el bot.",
+            parse_mode="Markdown"
+        )
+        return
+
     imei = message.text.strip()
     
     if imei.isdigit() and len(imei) == 15:
-        msg = bot.reply_to(message, f"🔍 Consultando el IMEI: {imei}...")
+        msg = bot.reply_to(message, f"🔍 Procesando verificación del dispositivo: {imei}...")
         
         try:
             url = "https://api.ifreeicloud.co.uk/"
@@ -135,7 +170,7 @@ def handle_message(message):
                 data = response.json()
             except Exception as json_err:
                 print(f"Error al parsear JSON: {json_err} - Respuesta cruda: {response.text}")
-                bot.send_message(message.chat.id, "❌ Error: La API devolvió una respuesta con formato inválido.")
+                bot.send_message(message.chat.id, "❌ Error: El servidor devolvió una respuesta con formato inválido.")
                 return
 
             print(f"Respuesta de API para IMEI {imei}: {data}")
@@ -145,9 +180,11 @@ def handle_message(message):
 
             if is_success:
                 result = data.get("object", {})
-                modelo = result.get('model', 'N/A')
+                
+                # Extracción segura adaptada para la familia 13 y otros modelos
+                modelo = result.get('model') or result.get('modelName') or 'Apple iPhone'
                 marca = result.get('brand', 'Apple')
-                fmi = result.get('fmi', result.get('find_my_iphone', 'N/A'))
+                fmi = result.get('fmi') or result.get('find_my_iphone') or 'N/A'
                 
                 texto_banner = "🌟 **NIRVANA CHECK PREMIUM** 🌟\n*Resultado oficial de tu consulta*"
                 bot.send_photo(message.chat.id, BANNER_URL, caption=texto_banner, parse_mode="Markdown")
@@ -168,12 +205,12 @@ def handle_message(message):
                     bot.send_message(message.chat.id, detalle_respuesta, parse_mode="Markdown")
                 
             else:
-                error_msg = data.get("error", data.get("message", "Error desconocido en la API"))
+                error_msg = data.get("error", data.get("message", "Error en el sistema"))
                 bot.send_photo(message.chat.id, BANNER_URL, caption="🌟 **NIRVANA CHECK PREMIUM**", parse_mode="Markdown")
-                bot.send_message(message.chat.id, f"❌ Error en la consulta: {error_msg}")
+                bot.send_message(message.chat.id, f"❌ Aviso del sistema: {error_msg}")
         
         except requests.exceptions.Timeout:
-            bot.send_message(message.chat.id, "❌ Error de conexión: La API tardó demasiado en responder (tiempo de espera agotado).")
+            bot.send_message(message.chat.id, "❌ Error de conexión: El servidor tardó demasiado en responder.")
         except Exception as e:
             print(f"Excepción general: {e}")
             bot.send_message(message.chat.id, f"❌ Ocurrió un error inesperado al procesar la solicitud.")
