@@ -8,8 +8,8 @@ TOKEN = os.getenv('BOT_TOKEN')
 IFREE_API_KEY = "SYE-VKS-E4U-9CR-TZB-X68-7YH-ID4"
 bot = telebot.TeleBot(TOKEN)
 
-# ⚠️ TU CANAL OFICIAL CONFIGURADO
-CANAL_ID = "@NirvanaInfinitoOficial" 
+# ⚠️ TU CANAL PRIVADO CONFIGURADO CON EL ID REAL
+CANAL_ID = -1003882781552 
 
 app = Flask('')
 
@@ -29,7 +29,7 @@ def keep_alive():
     t.start()
 
 def verificar_membresia(user_id):
-    """Verifica si el usuario forma parte del canal oficial"""
+    """Verifica si el usuario forma parte del canal privado oficial"""
     try:
         chat_member = bot.get_chat_member(CANAL_ID, user_id)
         estados_validos = ['creator', 'administrator', 'member']
